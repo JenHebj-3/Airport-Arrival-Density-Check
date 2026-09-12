@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Arrivals Check</title>
+<style>
+  :root{
+    --asphalt: #1c1d1b;
+    --asphalt-2: #262723;
+    --asphalt-3: #313230;
+    --amber: #e8a33d;
+    --steel: #8d8e88;
+    --steel-dim: #5c5d58;
+    --warn: #c46a5a;
+    --hair: #3a3b37;
+    --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--asphalt);color:#e9e8e2;font-family:var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:40px;}
+  header{padding:22px 18px 16px;border-bottom:1px solid var(--hair);}
+  header .label{font-size:11px;letter-spacing:0.04em;color:var(--steel-dim);margin-bottom:4px;}
+  header h1{margin:0;font-size:21px;font-weight:600;color:#f2f1ec;}
+  main{padding:16px;}
+  .config{background:var(--asphalt-2);border:1px solid var(--hair);border-radius:10px;padding:14px;margin-bottom:16px;}
+  .config-row{display:flex;gap:10px;margin-bottom:10px;}
+  .config-row:last-child{margin-bottom:0;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11px;color:var(--steel);margin-bottom:4px;}
+  .field input{width:100%;background:var(--asphalt-3);border:1px solid var(--hair);border-radius:6px;color:#f2f1ec;padding:9px 10px;font-size:15px;font-family:var(--mono);}
+  .field input::placeholder{color:var(--steel-dim);}
+  .airports-field{margin-top:10px;}
+  .airports-field label{display:block;font-size:11px;color:var(--steel);margin-bottom:6px;}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{background:var(--asphalt-3);border:1px solid var(--hair);border-radius:20px;padding:7px 13px;font-size:13px;font-family:var(--mono);color:var(--steel);cursor:pointer;user-select:none;}
+  .chip.active{background:var(--amber);border-color:var(--amber);color:#1c1d1b;font-weight:600;}
+  button.run{width:100%;margin-top:14px;background:var(--amber);border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:600;color:#1c1d1b;font-family:var(--sans);cursor:pointer;}
+  button.run:active{opacity:0.85;}
+  button.run:disabled{background:var(--steel-dim);color:#262723;}
+  .status{font-size:12px;color:var(--steel-dim);text-align:center;margin-top:10px;min-height:16px;}
+  .cards{display:flex;flex-direction:column;gap:12px;}
+  .card{background:var(--asphalt-2);border:1px solid var(--hair);border-radius:10px;padding:16px;position:relative;}
+  .card.leader{border-color:var(--amber);}
+  .card-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .card-top .code{font-family:var(--mono);font-size:16px;font-weight:600;color:#f2f1ec;letter-spacing:0.02em;}
+  .card-top .badge{font-size:10px;background:var(--amber);color:#1c1d1b;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:0.03em;}
+  .metric-row{display:flex;gap:18px;margin-bottom:10px;}
+  .metric .num{font-family:var(--mono);font-size:28px;font-weight:600;color:#f2f1ec;line-height:1;}
+  .metric .unit{font-size:11px;color:var(--steel-dim);margin-top:3px;}
+  .breakdown{font-size:12px;color:var(--steel);font-family:var(--mono);border-top:1px solid var(--hair);padding-top:9px;line-height:1.7;}
+  .breakdown .row{display:flex;justify-content:space-between;}
+  .note{font-size:11px;color:var(--steel-dim);margin-top:8px;line-height:1.5;}
+  .error{color:var(--warn);font-size:12px;margin-top:6px;}
+  .verdict{margin-top:16px;padding:14px 16px;background:var(--asphalt-3);border-left:3px solid var(--amber);border-radius:6px;font-size:13px;color:#e9e8e2;line-height:1.6;}
+  .setup-note{font-size:12px;color:var(--steel);background:var(--asphalt-2);border:1px solid var(--hair);border-radius:8px;padding:12px 14px;margin-bottom:16px;line-height:1.6;}
+</style>
+</head>
+<body>
+<header>
+  <div class="label">POSITIONING CHECK</div>
+  <h1>Arrivals by Window</h1>
+</header>
+<main>
+  <div class="setup-note">Paste your AviationStack (APILayer) key below — it's saved on this device only, so you only have to do this once.</div>
+  <div class="config">
+    <div class="config-row">
+      <div class="field">
+        <label>AviationStack API key</label>
+        <input type="text" id="apiKeyInput" placeholder="Paste your key here" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="config-row">
+      <div class="field"><label>Window start</label><input type="time" id="startTime" value="13:00"></div>
+      <div class="field"><label>Window end</label><input type="time" id="endTime" value="15:00"></div>
+    </div>
+    <div class="airports-field">
+      <label>Airports to compare</label>
+      <div class="chip-row" id="chipRow">
+        <div class="chip active" data-code="CLT">CLT</div>
+        <div class="chip active" data-code="RDU">RDU</div>
+        <div class="chip" data-code="GSO">GSO</div>
+      </div>
+    </div>
+    <button class="run" id="runBtn">Check arrivals</button>
+    <div class="status" id="statusLine"></div>
+  </div>
+  <div class="cards" id="results"></div>
+  <div class="verdict" id="verdict" style="display:none;"></div>
+</main>
+<script>
+const apiKeyInput = document.getElementById('apiKeyInput');
+try {
+  const savedKey = localStorage.getItem('aviationstack_api_key');
+  if(savedKey) apiKeyInput.value = savedKey;
+} catch(e) {}
+
+function getApiKey(){
+  const key = apiKeyInput.value.trim();
+  try { localStorage.setItem('aviationstack_api_key', key); } catch(e) {}
+  return key;
+}
+
+const SEAT_MAP = {
+  "319": 128, "320": 150, "321": 185, "32A": 150, "32Q": 185,
+  "738": 162, "739": 178, "737": 140, "73H": 189, "7M8": 172, "7M9": 178,
+  "772": 291, "773": 350, "788": 242, "789": 285, "781": 234,
+  "359": 253, "35K": 253, "339": 296, "332": 246,
+  "763": 210, "764": 245,
+  "CR9": 76, "CR7": 65, "CRJ": 50,
+  "E75": 76, "E70": 72, "E45": 50, "ER4": 44,
+  "AT7": 68, "DH8": 78,
+  "E50": 8, "E55": 12, "PC24": 8, "C25": 8,
+  "B35": 11, "S22": 10
+};
+const DEFAULT_SEATS = 150;
+
+function estimateSeats(code){
+  if(!code) return DEFAULT_SEATS;
+  return SEAT_MAP[code.toUpperCase()] || DEFAULT_SEATS;
+}
+function parseTimeToMinutes(t){ const [h,m]=t.split(":").map(Number); return h*60+m; }
+function scheduledToMinutes(iso){ const d=new Date(iso); return d.getHours()*60+d.getMinutes(); }
+
+async function fetchAirport(code, startMin, endMin, apiKey){
+  const url = `https://api.apilayer.net/aviationstack/v1/flights?access_key=${apiKey}&arr_iata=${code}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.info || data.error.code || "API error");
+  const flights = data.data || [];
+  let count=0, seatTotal=0, sawAircraftData=false;
+  const byType = {};
+  flights.forEach(f => {
+    const sched = f.arrival && f.arrival.scheduled;
+    if(!sched) return;
+    const mins = scheduledToMinutes(sched);
+    if(mins < startMin || mins > endMin) return;
+    const acCode = f.aircraft && (f.aircraft.iata || f.aircraft.icao);
+    if(acCode) sawAircraftData = true;
+    const seats = estimateSeats(acCode);
+    count++; seatTotal += seats;
+    const label = acCode || "unknown type";
+    byType[label] = (byType[label]||0)+1;
+  });
+  return { code, count, seatTotal, byType, sawAircraftData };
+}
+
+function renderCard(result, isLeader){
+  const { code, count, seatTotal, byType, sawAircraftData } = result;
+  const breakdownRows = Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([type,n]) => `<div class="row"><span>${type}</span><span>${n}</span></div>`).join("");
+  return `<div class="card ${isLeader?'leader':''}">
+    <div class="card-top"><span class="code">${code}</span>${isLeader?'<span class="badge">HIGHEST</span>':''}</div>
+    <div class="metric-row">
+      <div class="metric"><div class="num">${count}</div><div class="unit">arrivals</div></div>
+      <div class="metric"><div class="num">${seatTotal.toLocaleString()}</div><div class="unit">est. seats</div></div>
+    </div>
+    ${breakdownRows?`<div class="breakdown">${breakdownRows}</div>`:''}
+    ${!sawAircraftData?'<div class="note">No aircraft-type data returned — seat estimate uses a flat default per flight.</div>':''}
+  </div>`;
+}
+function renderError(code, message){
+  return `<div class="card"><div class="card-top"><span class="code">${code}</span></div><div class="error">Couldn't load: ${message}</div></div>`;
+}
+
+document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => chip.classList.toggle('active')));
+
+document.getElementById('runBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('runBtn');
+  const statusLine = document.getElementById('statusLine');
+  const resultsEl = document.getElementById('results');
+  const verdictEl = document.getElementById('verdict');
+  const originalBtnText = btn.textContent;
+  try {
+    const activeCodes = Array.from(document.querySelectorAll('.chip.active')).map(c => c.dataset.code);
+    if(activeCodes.length===0){ alert("Pick at least one airport chip first."); return; }
+    const apiKey = getApiKey();
+    if(!apiKey){ alert("Paste your AviationStack API key into the field above first."); return; }
+    const startMin = parseTimeToMinutes(document.getElementById('startTime').value);
+    const endMin = parseTimeToMinutes(document.getElementById('endTime').value);
+    btn.disabled = true; btn.textContent = "Checking...";
+    statusLine.textContent = "Contacting AviationStack...";
+    resultsEl.innerHTML = ""; verdictEl.style.display = "none";
+    const outcomes = await Promise.allSettled(activeCodes.map(code => fetchAirport(code, startMin, endMin, apiKey)));
+    let html="", successResults=[], errorMessages=[];
+    outcomes.forEach((outcome,i) => {
+      const code = activeCodes[i];
+      if(outcome.status==="fulfilled"){ successResults.push(outcome.value); }
+      else { const msg=(outcome.reason&&outcome.reason.message)||"request failed"; errorMessages.push(`${code}: ${msg}`); html+=renderError(code,msg); }
+    });
+    successResults.sort((a,b)=>b.seatTotal-a.seatTotal);
+    successResults.forEach((r,i)=>{ html+=renderCard(r, i===0 && successResults.length>1); });
+    resultsEl.innerHTML = html;
+    if(successResults.length>1){
+      const top=successResults[0], second=successResults[1];
+      verdictEl.style.display="block";
+      verdictEl.textContent = `${top.code} shows the most estimated arriving seat volume in this window (${top.seatTotal.toLocaleString()} vs ${second.code}'s ${second.seatTotal.toLocaleString()}). This is arrival volume only — weigh it against drive time, cost, and how many other drivers are already circling that queue before deciding.`;
+    }
+    if(successResults.length===0){ statusLine.textContent="All requests failed."; alert("Every airport request failed:\n\n"+errorMessages.join("\n")); }
+    else { statusLine.textContent = `Updated just now for ${Math.floor(startMin/60)}:${String(startMin%60).padStart(2,'0')}–${Math.floor(endMin/60)}:${String(endMin%60).padStart(2,'0')} today.`; }
+  } catch(err) {
+    alert("Something broke unexpectedly:\n\n"+(err&&err.message?err.message:String(err)));
+    statusLine.textContent = "Error — see popup.";
+  } finally {
+    btn.disabled=false; btn.textContent=originalBtnText;
+  }
+});
+</script>
+</body>
+</html>
